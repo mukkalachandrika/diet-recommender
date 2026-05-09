@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Diet Plan — NutriAI</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green: #2d6a4f; --green-light: #e8f5ef; --green-mid: #52b788;
+      --text: #1a1a1a; --muted: #6b7280; --border: #e5e7eb; --bg: #f9fafb; --white: #ffffff;
+    }
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    header { background: var(--white); border-bottom: 1px solid var(--border); padding: 20px 40px; display: flex; align-items: center; justify-content: space-between; }
+    .logo { font-family: 'DM Serif Display', serif; font-size: 24px; color: var(--green); }
+    .logo span { color: var(--green-mid); }
+    a.back { color: var(--muted); text-decoration: none; font-size: 14px; }
+    a.back:hover { color: var(--green); }
+    main { max-width: 780px; margin: 48px auto; padding: 0 24px 80px; }
+    .profile-banner {
+      background: var(--green);
+      color: #fff;
+      border-radius: 14px;
+      padding: 24px 28px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 28px;
+    }
+    .avatar {
+      width: 54px; height: 54px; border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      color: #fff; font-weight: 700; font-size: 20px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .banner-name { font-family: 'DM Serif Display', serif; font-size: 22px; margin-bottom: 4px; }
+    .stats { display: flex; gap: 16px; flex-wrap: wrap; }
+    .stat { font-size: 13px; opacity: 0.85; }
+    .stat strong { opacity: 1; font-weight: 600; }
+    .badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      border-radius: 20px;
+      padding: 3px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      margin-top: 8px;
+    }
+
+    /* Ask section */
+    .ask-card { background: var(--white); border: 1px solid var(--border); border-radius: 14px; padding: 24px 28px; margin-bottom: 28px; }
+    .ask-card h2 { font-family: 'DM Serif Display', serif; font-size: 20px; margin-bottom: 6px; }
+    .ask-card p { color: var(--muted); font-size: 14px; margin-bottom: 16px; }
+    .ask-row { display: flex; gap: 10px; }
+    .ask-row input {
+      flex: 1;
+      padding: 11px 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: 'DM Sans', sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      outline: none;
+    }
+    .ask-row input:focus { border-color: var(--green-mid); background: var(--white); }
+    .btn {
+      padding: 11px 24px;
+      background: var(--green);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: #1b4332; }
+    .btn:disabled { background: var(--muted); cursor: not-allowed; }
+    .quick-prompts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .chip {
+      font-size: 12px;
+      padding: 5px 12px;
+      background: var(--green-light);
+      color: var(--green);
+      border-radius: 20px;
+      cursor: pointer;
+      border: 1px solid #b7e4c7;
+      transition: background 0.15s;
+    }
+    .chip:hover { background: #d8f3dc; }
+
+    /* Diet plan output */
+    .diet-card { background: var(--white); border: 1px solid var(--border); border-radius: 14px; padding: 28px; }
+    .diet-card h2 { font-family: 'DM Serif Display', serif; font-size: 22px; margin-bottom: 4px; }
+    .diet-card .question-echo { color: var(--muted); font-size: 13px; margin-bottom: 20px; font-style: italic; }
+    .diet-content { font-size: 15px; line-height: 1.75; white-space: pre-wrap; color: var(--text); }
+
+    .loading { display: none; align-items: center; gap: 10px; color: var(--muted); font-size: 14px; padding: 20px 0; }
+    .loading.show { display: flex; }
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid var(--green-light);
+      border-top-color: var(--green);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">Nutri<span>AI</span></div>
+    <a class="back" href="/">← All profiles</a>
+  </header>
+
+  <main>
+    <!-- Profile banner -->
+    <div class="profile-banner">
+      <div class="avatar">{{ profile.name[0].upper() }}</div>
+      <div>
+        <div class="banner-name">{{ profile.name }}</div>
+        <div class="stats">
+          <span class="stat"><strong>{{ profile.age }}</strong> yrs</span>
+          <span class="stat"><strong>{{ profile.weight_kg }}</strong> kg</span>
+          <span class="stat"><strong>{{ profile.height_cm }}</strong> cm</span>
+          <span class="stat">BMI <strong>{{ "%.1f"|format(profile.weight_kg / ((profile.height_cm/100)**2)) }}</strong></span>
+        </div>
+        <span class="badge">🎯 {{ profile.goal }}</span>
+        {% if profile.allergies %}
+          <span class="badge" style="margin-left:6px;">⚠️ {{ profile.allergies }}</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Ask form -->
+    <div class="ask-card">
+      <h2>Ask your diet assistant</h2>
+      <p>Your health profile is loaded as context. Ask anything about your diet.</p>
+      <form method="POST" id="dietForm">
+        <div class="ask-row">
+          <input type="text" name="question" id="questionInput"
+                 value="{{ question }}"
+                 placeholder="Give me a personalized diet plan for today" />
+          <button type="submit" class="btn" id="submitBtn">Generate ✦</button>
+        </div>
+        <div class="quick-prompts">
+          <span class="chip" onclick="setQ('Give me a full day diet plan')">Full day plan</span>
+          <span class="chip" onclick="setQ('What should I eat before and after a workout?')">Pre/post workout</span>
+          <span class="chip" onclick="setQ('Suggest a high-protein vegetarian meal plan')">High-protein veg</span>
+          <span class="chip" onclick="setQ('What foods should I completely avoid?')">Foods to avoid</span>
+          <span class="chip" onclick="setQ('Give me a 7-day diet plan')">7-day plan</span>
+        </div>
+      </form>
+      <div class="loading" id="loader">
+        <div class="spinner"></div>
+        <span>Generating your personalized plan…</span>
+      </div>
+    </div>
+
+    <!-- Diet plan result -->
+    {% if diet_plan %}
+    <div class="diet-card">
+      <h2>Your Personalized Diet Plan</h2>
+      <p class="question-echo">You asked: "{{ question }}"</p>
+      <div class="diet-content">{{ diet_plan }}</div>
+    </div>
+    {% endif %}
+  </main>
+
+  <script>
+    function setQ(text) {
+      document.getElementById('questionInput').value = text;
+    }
+    document.getElementById('dietForm').addEventListener('submit', function() {
+      document.getElementById('loader').classList.add('show');
+      document.getElementById('submitBtn').disabled = true;
+      document.getElementById('submitBtn').textContent = 'Generating…';
+    });
+  </script>
+</body>
+</html>
